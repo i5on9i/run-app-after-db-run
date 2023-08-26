@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  db:
+    image: mariadb:lts
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: rootpw
+    ports:
+      - "3326:3306"
+    # entrypoint:
+    #   - tail
+    #   - -f
+    #   - /dev/null
+    networks:
+      - myapp-test-network
+    # volumes:
+      # - /mnt/d/a/myapp/docker/db_data:/var/lib/mysql
+  myapp:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - /mnt/d/a/myapp/docker/myapp/srczip/:/myapp
+    entrypoint:
+      - ./wait-for-it.sh
+      - db:3306
+      - --timeout=40
+      - --
+      - ./myapp-docker-entrypoint.sh
+
+    networks:
+      - myapp-test-network
+    depends_on:
+      - db
+    args:
+      DB_HOST: db
+      DB_PORT: 3306
+      FLYWAY_URL: jdbc:mariadb://db:3306/myapp
+      FLYWAY_USER: root
+      FLYWAY_PASSWORD: rootpw
+
+networks:
+  myapp-test-network:
+    driver: bridge
+
